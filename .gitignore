@@ -128,8 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# data folder
-data
-
 # Twitter_API uncensored notebook
 Twitter_API_uncensered.ipynb
