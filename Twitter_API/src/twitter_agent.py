@@ -29,9 +29,6 @@ class TwitterAgent:
             self.stream.filter(track=i)
             print('\033[0;32m' + 'The stream is done. The tweets are store in txt file under data' + '\033[0;0m')
 
-
-        pass
-
 class TwitterStream(twp.streaming.Stream):
     '''
     Class used to deal with streaming data.
