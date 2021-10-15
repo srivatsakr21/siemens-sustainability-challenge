@@ -1,45 +1,70 @@
 import tweepy as twp
+import json
 
 class TwitterAgent:
     '''
-    Agent used for interact with twitter
+    Agent used for interact with twitter.
 
     Args:
-
+        params: parameters in the form of dict
     '''
     def __init__(self, params: dict) -> None:
         self.params = params
 
-        # initialize the authorization instance
-        self.auth = twp.AppAuthHandler(self.params["consumer_key"], self.params["consumer_secret"])
-
-        # initialize the API instance
-        self.api = twp.API(self.auth)
-
-    def get_tweets(self, keyword: str) -> list:
+        self.stream = None
+    
+    def save_tweets(self, keywords: list) -> None:
         '''
-        Method used for getting tweets from the twitter
+        Method used for saving the tweets.
 
         Args:
-            keyword: Keyword used for searching
+            keywords: keywords store in shape of list[list[str]]
 
         Return:
-            the tweets
+            The searched tweets are stored in related .txt file
         '''
+        for i in keywords:
+            self.stream = TwitterStream(self.params, i)
+            print('\033[0;32m' + 'The stream is started.' + '\033[0;0m')
+            self.stream.filter(track=i)
+            print('\033[0;32m' + 'The stream is done. The tweets are store in txt file under data' + '\033[0;0m')
 
-        #TODO
-
-        return None
-    
-    def save_tweets(self) -> None:
-        '''
-        Method used for saving the tweets
-
-        Args:
-            
-        '''
-
-        #TODO
 
         pass
 
+class TwitterStream(twp.streaming.Stream):
+    '''
+    Class used to deal with streaming data.
+    Do NOT use this class directly, use TwitterAgent instead.
+
+    Args:
+        params: dictionary containing parameters
+        keywords: keywords used for searching
+
+    Return:
+        The TwitterStream.filter() method will store all the tweets in a file name "${KEYWORDS}_tweet.txt"
+    '''
+    def __init__(self, params: dict, keywords) -> None:
+        super().__init__(params["consumer_key"], params["consumer_secret"], params["access_token"], params["access_token_secret"])
+
+        self._path = params["saving_path"]
+        self._NUM = params["NUM"]
+        self.num_tweets = 0
+        self.keywords = keywords
+        
+        self.name = self._path + "/"
+        for i in keywords:
+            self.name += i + "_"
+        self.name += "tweet.txt"
+
+        self.file = open(self.name, "w")
+
+    def on_status(self, status):
+        tweet = status._json
+        self.file.write(json.dumps(tweet) + '\n')
+        self.num_tweets += 1
+        if self.num_tweets < self._NUM:
+            self.running = True
+        else:
+            self.running = False
+            self.file.close()
