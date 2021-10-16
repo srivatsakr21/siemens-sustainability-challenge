@@ -1,9 +1,10 @@
+from requests.models import Response
 from docx import Document
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 import requests
 import asyncio
 from bs4 import BeautifulSoup
-from typing import List
+from typing import List, Optional
 
 
 def extract_urls(company: str) -> List[str]:
@@ -18,19 +19,26 @@ def extract_urls(company: str) -> List[str]:
     # pdfs are harder to manage...
     return [l for l in links if not l.endswith(".pdf")]
 
+def silent_get(url: str) -> Optional[Response]:
+    try:
+        return requests.get(url, timeout=10)
+    except Exception as e:
+        print(e)
+        return None
 
 async def fetch_html(links: List[str]):
     # speed optimization
     loop = asyncio.get_event_loop()
-    futures = [loop.run_in_executor(None, requests.get, link) for link in links]
+    futures = [loop.run_in_executor(None, silent_get, link) for link in links]
     responses = list(await asyncio.gather(*futures))
 
-    return [r.text for r in responses if r.status_code == 200]
+    return [r.text for r in responses if r is not None and r.status_code == 200]
 
 
 async def extract_news_articles(company: str) -> List[str]:
     links = extract_urls(company)
     htmls = await fetch_html(links)
+    print(len(htmls))
     texts = []
     for html in htmls:
         # credit to https://stackoverflow.com/a/24618186
